@@ -15,6 +15,7 @@ import com.stonewu.fusion.service.team.TeamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,7 +71,7 @@ public class UserService {
         return userRoleMapper.exists(new LambdaQueryWrapper<UserRole>().eq(UserRole::getRoleId, adminRole.getId()));
     }
 
-    @Cacheable(value = "userByUsername", key = "#username")
+    @Cacheable(value = "userByUsername", key = "#username", unless = "#result == null")
     public User getByUsername(String username) {
         return userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
     }
@@ -164,8 +165,13 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "userRoles", key = "#userId")
+    @Caching(evict = {
+            @CacheEvict(value = "userRoles", key = "#userId"),
+            @CacheEvict(value = "userPermission", key = "#userId")
+    })
     public void assignRole(Long userId, Long roleId) {
+        if (userMapper.selectById(userId) == null) throw new BusinessException(404, "用户不存在");
+        if (roleMapper.selectById(roleId) == null) throw new BusinessException(404, "角色不存在");
         boolean exists = userRoleMapper.exists(
                 new LambdaQueryWrapper<UserRole>()
                         .eq(UserRole::getUserId, userId)
@@ -176,8 +182,18 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "userRoles", key = "#userId")
+    @Caching(evict = {
+            @CacheEvict(value = "userRoles", key = "#userId"),
+            @CacheEvict(value = "userPermission", key = "#userId")
+    })
     public void removeRole(Long userId, Long roleId) {
+        Role role = roleMapper.selectById(roleId);
+        if (role == null) throw new BusinessException(404, "角色不存在");
+        if (ADMIN_ROLE_CODE.equals(role.getCode())) {
+            long adminCount = userRoleMapper.selectCount(new LambdaQueryWrapper<UserRole>()
+                    .eq(UserRole::getRoleId, roleId));
+            if (adminCount <= 1) throw new BusinessException(400, "必须至少保留一名系统管理员");
+        }
         userRoleMapper.delete(new LambdaQueryWrapper<UserRole>()
                 .eq(UserRole::getUserId, userId)
                 .eq(UserRole::getRoleId, roleId));

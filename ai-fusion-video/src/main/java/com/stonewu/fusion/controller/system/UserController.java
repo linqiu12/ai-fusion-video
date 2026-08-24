@@ -8,6 +8,8 @@ import com.stonewu.fusion.convert.system.UserConvert;
 import com.stonewu.fusion.entity.system.Role;
 import com.stonewu.fusion.entity.system.User;
 import com.stonewu.fusion.service.system.UserService;
+import com.stonewu.fusion.service.audit.AuditEventService;
+import com.stonewu.fusion.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.stonewu.fusion.common.CommonResult.success;
 
@@ -27,6 +30,7 @@ import static com.stonewu.fusion.common.CommonResult.success;
 public class UserController {
 
     private final UserService userService;
+    private final AuditEventService auditEventService;
 
     @GetMapping("/page")
     @Operation(summary = "获取用户分页列表")
@@ -73,6 +77,9 @@ public class UserController {
     public CommonResult<Boolean> assignRole(@RequestParam("userId") Long userId,
                                             @RequestParam("roleId") Long roleId) {
         userService.assignRole(userId, roleId);
+        auditEventService.append(SecurityUtils.requireCurrentUserId(), null, "USER_ROLE_ASSIGNED",
+                "USER", String.valueOf(userId), "ASSIGN_ROLE", "SUCCESS", null, null,
+                Map.of("roleId", roleId));
         return success(true);
     }
 
@@ -82,6 +89,9 @@ public class UserController {
     public CommonResult<Boolean> removeRole(@RequestParam("userId") Long userId,
                                             @RequestParam("roleId") Long roleId) {
         userService.removeRole(userId, roleId);
+        auditEventService.append(SecurityUtils.requireCurrentUserId(), null, "USER_ROLE_REMOVED",
+                "USER", String.valueOf(userId), "REMOVE_ROLE", "SUCCESS", null, null,
+                Map.of("roleId", roleId));
         return success(true);
     }
 

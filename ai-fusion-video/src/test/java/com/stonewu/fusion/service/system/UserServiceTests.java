@@ -133,6 +133,19 @@ class UserServiceTests {
         assertTrue(exception.getMessage().contains("用户名已存在"));
     }
 
+    @Test
+    void removeRoleMustKeepAtLeastOneAdministrator() {
+        when(roleMapper.selectById(1L)).thenReturn(Role.builder().id(1L).code("admin").build());
+        when(userRoleMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> userService.removeRole(100L, 1L));
+
+        assertEquals(400, exception.getCode());
+        assertTrue(exception.getMessage().contains("至少保留一名系统管理员"));
+        verify(userRoleMapper, never()).delete(any(LambdaQueryWrapper.class));
+    }
+
     private void mockAdminRole() {
         Role adminRole = Role.builder().id(1L).code("admin").name("管理员").build();
         when(roleMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(adminRole);

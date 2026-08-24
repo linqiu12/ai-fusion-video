@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,9 +41,6 @@ public class TeamService {
 
     @Transactional
     public Team createTeam(String name, String description, Long ownerUserId) {
-        if (getSingleTeam() != null) {
-            throw new BusinessException(400, "开源版仅支持单团队");
-        }
         return createTeamRecord(name, description, ownerUserId, TeamMemberRoleEnum.OWNER.getRole());
     }
 
@@ -119,6 +117,28 @@ public class TeamService {
                 .eq(TeamMember::getStatus, 1));
     }
 
+    /**
+     * SaaS 数据边界守卫：只有团队创建者或团队管理员可以改变租户及成员状态。
+     * 该校验必须位于服务端，不能依赖前端隐藏按钮。
+     */
+    public void requireTeamManager(Long teamId, Long userId) {
+        TeamMember member = teamMemberMapper.selectOne(new LambdaQueryWrapper<TeamMember>()
+                .eq(TeamMember::getTeamId, teamId)
+                .eq(TeamMember::getUserId, userId)
+                .eq(TeamMember::getStatus, 1)
+                .last("LIMIT 1"));
+        if (member == null || member.getRole() == null || member.getRole() > TeamMemberRoleEnum.ADMIN.getRole()) {
+            throw new BusinessException(403, "仅团队创建者或管理员可执行此操作");
+        }
+    }
+
+    /** 读取租户资源前统一校验成员关系。 */
+    public void requireTeamMember(Long teamId, Long userId) {
+        if (!isUserInTeam(teamId, userId)) {
+            throw new BusinessException(403, "无权访问该租户数据");
+        }
+    }
+
     public List<Long> listMemberUserIds(Long teamId) {
         if (teamId == null) {
             return List.of();
@@ -175,6 +195,21 @@ public class TeamService {
         teamMapper.updateById(team);
     }
 
+    /** 平台管理员维护租户套餐；实际计费和配额扣减可按 planCode 对接。 */
+    @Transactional
+    public Team updateTenantPlan(Long id, String planCode, LocalDateTime expiresAt) {
+        Team team = teamMapper.selectById(id);
+        if (team == null) throw new BusinessException(404, "租户不存在");
+        String normalizedPlan = planCode == null ? "" : planCode.trim().toUpperCase();
+        if (!List.of("FREE", "PRO", "ENTERPRISE").contains(normalizedPlan)) {
+            throw new BusinessException(400, "套餐仅支持 FREE、PRO、ENTERPRISE");
+        }
+        team.setPlanCode(normalizedPlan);
+        team.setExpiresAt(expiresAt);
+        teamMapper.updateById(team);
+        return team;
+    }
+
     @Transactional
     public void deleteTeam(Long id) {
         throw new BusinessException(400, "开源版仅支持单团队，不支持删除团队");
@@ -223,6 +258,8 @@ public class TeamService {
                 .name(name)
                 .description(description)
                 .ownerUserId(ownerUserId)
+                .tenantKey(UUID.randomUUID().toString().replace("-", ""))
+                .planCode("FREE")
                 .status(1)
                 .build();
         teamMapper.insert(team);

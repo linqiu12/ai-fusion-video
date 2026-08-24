@@ -3,6 +3,7 @@ package com.stonewu.fusion.security;
 import com.stonewu.fusion.entity.system.Role;
 import com.stonewu.fusion.entity.system.User;
 import com.stonewu.fusion.service.system.UserService;
+import com.stonewu.fusion.service.system.PermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +20,7 @@ import java.util.List;
 public class SecurityUserDetailsService implements UserDetailsService {
 
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -31,6 +33,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("用户不存在: " + username);
         }
         List<Role> roles = userService.getUserRoles(user.getId());
-        return new SecurityUserDetails(user, roles, currentTeamId);
+        return new SecurityUserDetails(user, roles, currentTeamId,
+                permissionService.permissionCodes(user.getId(), roles));
     }
 }

@@ -43,14 +43,23 @@ public class SecurityUserDetails implements UserDetails {
     }
 
     public SecurityUserDetails(User user, List<Role> roles, Long currentTeamId) {
+        this(user, roles, currentTeamId, List.of());
+    }
+
+    public SecurityUserDetails(User user, List<Role> roles, Long currentTeamId,
+                               Collection<String> permissionCodes) {
         this.userId = user.getId();
         this.username = user.getUsername();
         this.password = user.getPassword();
         this.status = user.getStatus();
         this.currentTeamId = currentTeamId;
-        this.authorities = roles.stream()
+        List<GrantedAuthority> roleAuthorities = roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getCode().toUpperCase()))
                 .collect(Collectors.toList());
+        permissionCodes.stream()
+                .map(SimpleGrantedAuthority::new)
+                .forEach(roleAuthorities::add);
+        this.authorities = List.copyOf(roleAuthorities);
     }
 
     public SecurityUserDetails withCurrentTeamId(Long teamId) {

@@ -10,6 +10,8 @@ if (process.env.NODE_ENV === "development" && !developmentBackendUrl) {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // 允许并行启动隔离的 E2E 实例，避免占用开发者现有 .next 锁。
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
   // Development API rewrites proxy SSE through Next.js. Disable compression
   // there so incremental events are flushed instead of buffered by gzip.
@@ -46,4 +48,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-

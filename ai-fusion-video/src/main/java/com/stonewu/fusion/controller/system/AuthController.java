@@ -65,6 +65,9 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "登录")
     public CommonResult<LoginRespVO> login(@Valid @RequestBody LoginReqVO reqVO) {
+        if (userService.getByUsername(reqVO.getUsername()) == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(reqVO.getUsername(), reqVO.getPassword()));
         SecurityUserDetails userDetails = (SecurityUserDetails) authentication.getPrincipal();

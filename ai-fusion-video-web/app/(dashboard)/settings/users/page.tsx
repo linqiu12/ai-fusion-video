@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { userApi } from "@/lib/api/user";
+import { permissionApi, type SystemRole } from "@/lib/api/permission";
+import { toast } from "sonner";
 import { toastApiError } from "@/lib/api/toast-api-error";
 import type { UserRespVO } from "@/lib/api/types";
 import { containerVariants, itemVariants, settingsTypography } from "../_shared";
@@ -31,6 +33,7 @@ export default function SettingsUsersPage() {
   const [loadedKeyword, setLoadedKeyword] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRespVO[]>([]);
   const [total, setTotal] = useState(0);
+  const [roles, setRoles] = useState<SystemRole[]>([]);
   const loading = isAdmin && loadedKeyword !== normalizedKeyword;
 
   useEffect(() => {
@@ -66,6 +69,22 @@ export default function SettingsUsersPage() {
       cancelled = true;
     };
   }, [isAdmin, normalizedKeyword]);
+
+  useEffect(() => {
+    if (isAdmin) permissionApi.roles().then(setRoles).catch(err => toastApiError(err, "加载角色失败"));
+  }, [isAdmin]);
+
+  const toggleRole = async (user: UserRespVO, role: SystemRole) => {
+    const assigned = user.roles.includes(role.code);
+    try {
+      if (assigned) await permissionApi.removeUserRole(user.id, role.id);
+      else await permissionApi.assignUserRole(user.id, role.id);
+      setUsers(current => current.map(item => item.id === user.id ? {
+        ...item, roles: assigned ? item.roles.filter(code => code !== role.code) : [...item.roles, role.code],
+      } : item));
+      toast.success(`已${assigned ? "移除" : "分配"}角色 ${role.name}，变更已写入审计记录`);
+    } catch (err) { toastApiError(err, "变更用户角色失败"); }
+  };
 
   const adminCount = useMemo(
     () => users.filter((user) => user.roles.includes("admin")).length,
@@ -171,18 +190,10 @@ export default function SettingsUsersPage() {
                     <tr key={user.id} className="border-t border-border/20">
                       <td className="px-5 py-4 font-medium">{user.username}</td>
                       <td className="px-5 py-4 text-muted-foreground">{user.nickname || "--"}</td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full px-2.5 py-1 text-xs font-medium border",
-                            isUserAdmin
-                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
-                              : "border-border/30 bg-muted/20 text-foreground/80"
-                          )}
-                        >
-                          {isUserAdmin ? "管理员" : "成员"}
-                        </span>
-                      </td>
+                      <td className="px-5 py-4"><div className="flex flex-wrap gap-1.5">{roles.map(role => {
+                        const assigned = user.roles.includes(role.code);
+                        return <button key={role.id} aria-label={`${user.username}-${role.name}`} onClick={() => void toggleRole(user, role)} className={cn("rounded-full border px-2.5 py-1 text-xs", assigned ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600" : "border-border/30 text-muted-foreground")}>{role.name}</button>;
+                      })}{roles.length === 0 && <span>{isUserAdmin ? "管理员" : "成员"}</span>}</div></td>
                       <td className="px-5 py-4">
                         <span
                           className={cn(

@@ -76,4 +76,33 @@ class TeamServiceTests {
         assertThat(ownerScope.getOwnerType()).isEqualTo(2);
         assertThat(ownerScope.getOwnerId()).isEqualTo(5L);
     }
+
+    @Test
+    void requireTeamManagerAllowsOwner() {
+        when(teamMemberMapper.selectOne(any())).thenReturn(TeamMember.builder()
+                .teamId(5L).userId(9L).role(1).status(1).build());
+
+        teamService.requireTeamManager(5L, 9L);
+
+        verify(teamMemberMapper).selectOne(any());
+    }
+
+    @Test
+    void requireTeamManagerRejectsOrdinaryMember() {
+        when(teamMemberMapper.selectOne(any())).thenReturn(TeamMember.builder()
+                .teamId(5L).userId(9L).role(3).status(1).build());
+
+        assertThatThrownBy(() -> teamService.requireTeamManager(5L, 9L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("仅团队创建者或管理员");
+    }
+
+    @Test
+    void requireTeamMemberRejectsCrossTenantAccess() {
+        when(teamMemberMapper.exists(any())).thenReturn(false);
+
+        assertThatThrownBy(() -> teamService.requireTeamMember(99L, 9L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("无权访问该租户数据");
+    }
 }

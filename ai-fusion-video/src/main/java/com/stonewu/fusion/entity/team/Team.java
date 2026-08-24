@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.stonewu.fusion.common.BaseEntity;
 import lombok.*;
+import java.time.LocalDateTime;
 
 /**
  * 团队实体
@@ -36,6 +37,15 @@ public class Team extends BaseEntity {
 
     /** 创建者用户ID */
     private Long ownerUserId;
+
+    /** SaaS 租户稳定标识，不向业务层暴露自增主键。 */
+    private String tenantKey;
+
+    /** 当前订阅套餐代码，配额模块可据此扩展。 */
+    private String planCode;
+
+    /** 套餐到期时间；为空表示当前套餐不设固定到期时间。 */
+    private LocalDateTime expiresAt;
 
     /** 状态：0-禁用 1-启用 */
     @Builder.Default

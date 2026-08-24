@@ -18,6 +18,8 @@ import {
   Video,
   PanelLeftClose,
   PanelLeftOpen,
+  KeyRound,
+  Building2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,7 @@ const projectListItems: SidebarItem[] = [
 
 const projectDetailItems: SidebarItem[] = [
   { key: "", label: "概览", icon: LayoutDashboard, href: "", iconColor: "text-blue-400" },
+  { key: "novel", label: "小说", icon: BookOpen, href: "/novel", iconColor: "text-amber-400" },
   { key: "scripts", label: "剧本", icon: BookOpen, href: "/scripts", iconColor: "text-purple-400" },
   { key: "storyboards", label: "分镜", icon: Film, href: "/storyboards", iconColor: "text-cyan-400" },
   { key: "assets", label: "资产", icon: Images, href: "/assets", iconColor: "text-orange-400" },
@@ -97,6 +100,8 @@ export function SidebarNav({
     ? [
       { key: "general", label: "通用设置", icon: Settings, href: "/settings/general", iconColor: "text-green-400" },
       { key: "users", label: "用户列表", icon: Users, href: "/settings/users", iconColor: "text-cyan-400" },
+      { key: "permissions", label: "权限管理", icon: KeyRound, href: "/settings/permissions", iconColor: "text-amber-400" },
+      { key: "tenants", label: "SaaS 租户", icon: Building2, href: "/settings/tenants", iconColor: "text-emerald-400" },
       { key: "profile", label: "个人设置", icon: Users, href: "/settings/profile", iconColor: "text-blue-400" },
       { key: "ai-models", label: "AI 配置", icon: Bot, href: "/settings/ai-models", iconColor: "text-purple-400" },
       { key: "agents", label: "智能体配置", icon: Bot, href: "/settings/agents", iconColor: "text-violet-400" },

@@ -23,6 +23,7 @@ import java.util.List;
 
 import static com.stonewu.fusion.common.CommonResult.success;
 import static com.stonewu.fusion.security.SecurityUtils.getCurrentUserId;
+import static com.stonewu.fusion.security.SecurityUtils.requireCurrentUserId;
 
 @Tag(name = "团队管理")
 @RestController
@@ -45,6 +46,7 @@ public class TeamController {
     @Operation(summary = "获取团队详情")
     @Parameter(name = "id", description = "团队ID", required = true)
     public CommonResult<TeamRespVO> getTeam(@RequestParam("id") Long id) {
+        teamService.requireTeamMember(id, requireCurrentUserId());
         Team team = teamService.getById(id);
         return success(team == null ? null : enrichTeamVO(team));
     }
@@ -61,6 +63,7 @@ public class TeamController {
     @PutMapping("/update")
     @Operation(summary = "更新团队")
     public CommonResult<Boolean> updateTeam(@Valid @RequestBody TeamUpdateReqVO reqVO) {
+        teamService.requireTeamManager(reqVO.getId(), requireCurrentUserId());
         teamService.updateTeam(reqVO.getId(), reqVO.getName(), reqVO.getDescription(), reqVO.getLogo(), reqVO.getStatus());
         return success(true);
     }
@@ -78,12 +81,14 @@ public class TeamController {
     @PostMapping("/member/add")
     @Operation(summary = "添加团队成员")
     public CommonResult<Long> addMember(@Valid @RequestBody TeamMemberAddReqVO reqVO) {
+        teamService.requireTeamManager(reqVO.getTeamId(), requireCurrentUserId());
         return success(teamService.addMember(reqVO.getTeamId(), reqVO.getUserId(), reqVO.getRole()));
     }
 
     @PostMapping("/member/remove")
     @Operation(summary = "移除团队成员")
     public CommonResult<Boolean> removeMember(@RequestParam("teamId") Long teamId, @RequestParam("userId") Long userId) {
+        teamService.requireTeamManager(teamId, requireCurrentUserId());
         teamService.removeMember(teamId, userId);
         return success(true);
     }
@@ -93,6 +98,7 @@ public class TeamController {
     public CommonResult<Boolean> changeMemberRole(@RequestParam("teamId") Long teamId,
                                                    @RequestParam("userId") Long userId,
                                                    @RequestParam("role") Integer role) {
+        teamService.requireTeamManager(teamId, requireCurrentUserId());
         teamService.changeMemberRole(teamId, userId, role);
         return success(true);
     }
@@ -100,6 +106,7 @@ public class TeamController {
     @GetMapping("/member/list")
     @Operation(summary = "获取团队成员列表")
     public CommonResult<List<TeamMemberRespVO>> getMemberList(@RequestParam("teamId") Long teamId) {
+        teamService.requireTeamMember(teamId, requireCurrentUserId());
         return success(TeamConvert.INSTANCE.convertMemberList(teamService.getMemberList(teamId)));
     }
 

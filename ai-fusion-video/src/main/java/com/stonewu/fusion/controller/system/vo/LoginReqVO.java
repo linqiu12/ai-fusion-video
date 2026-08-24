@@ -14,6 +14,7 @@ public class LoginReqVO {
 
     @Schema(description = "密码", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "密码不能为空")
-    @Size(min = 6, max = 32, message = "密码长度为 6-32 位")
+    // 登录兼容安装时约定的 admin/admin 引导账户；注册和改密仍强制至少 6 位。
+    @Size(min = 5, max = 32, message = "密码长度为 5-32 位")
     private String password;
 }

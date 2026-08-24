@@ -1,9 +1,9 @@
 spring:
   # MySQL
   datasource:
-    url: jdbc:mysql://localhost:43306/ai_fusion_video?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/ai_fusion_video?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: root
-    password: 123456
+    password: NFTurbo666
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # Flyway
@@ -15,10 +15,15 @@ spring:
   # Redis
   data:
     redis:
-      host: localhost
-      port: 46379
-      password: 123456
-      database: 0
+      cluster:
+        nodes:
+          - localhost:7001
+          - localhost:7002
+          - localhost:7003
+          - localhost:7004
+          - localhost:7005
+          - localhost:7006
+      password: NFTurbo666
       connect-timeout: 2s
       timeout: 3s
 
